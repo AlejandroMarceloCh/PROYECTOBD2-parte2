@@ -39,7 +39,7 @@
 \campo{Equipo} 4 integrantes \\
 \campo{Repositorio} \url{https://github.com/AlejandroMarceloCh/PROYECTOBD2-parte2} \\
 \campo{Dataset} Free Music Archive (FMA) --- \url{https://github.com/mdeff/fma} \\
-\campo{Material de referencia} Enunciado del proyecto; material del curso: «Técnicas de Indexación», «Algoritmos Externos», «Recuperación de Información Textual», «Índices Avanzados en PostgreSQL» y «BD Vectoriales --- Modelos de Recuperación Multimedia».
+\campo{Material de referencia} Enunciado del proyecto; material del curso: ``Técnicas de Indexación'', ``Algoritmos Externos'', ``Recuperación de Información Textual'', ``Índices Avanzados en PostgreSQL'' y ``BD Vectoriales --- Modelos de Recuperación Multimedia''.
 
 \hrulefill
 
@@ -125,7 +125,7 @@ Antes de los briefs, una aclaración sobre las fuentes: el curso enseña los \em
   \item Comparativa contra GIN y \texttt{to\_tsvector}/\texttt{to\_tsquery} sobre el mismo corpus.
 \end{itemize}
 
-\campo{Temas del curso que aplica} «Recuperación de Información Textual» (índice invertido, TF-IDF, similitud de coseno, intersección de posting lists); «Algoritmos Externos» (la fusión \emph{k-way} con min-heap que sostiene la construcción del índice). La comparativa contra GIN/GiST la pide el enunciado: el material cubre el full-text con \texttt{to\_tsvector} y el marco GiST, pero GIN como tal no está en los slides.
+\campo{Temas del curso que aplica} ``Recuperación de Información Textual'' (índice invertido, TF-IDF, similitud de coseno, intersección de posting lists); ``Algoritmos Externos'' (la fusión \emph{k-way} con min-heap que sostiene la construcción del índice). La comparativa contra GIN/GiST la pide el enunciado: el material cubre el full-text con \texttt{to\_tsvector} y el marco GiST, pero GIN como tal no está en los slides.
 
 % ------------------------------------------------------------------
 \integrante{Integrante 2}{Recuperación de audio}
@@ -144,7 +144,7 @@ Antes de los briefs, una aclaración sobre las fuentes: el curso enseña los \em
   \item Control de calidad previo: descartar tracks corruptos o silenciosos antes de extraer.
 \end{itemize}
 
-\campo{Temas del curso que aplica} «BD Vectoriales --- Modelos de Recuperación Multimedia». El profesor enseña este pipeline tal cual: \emph{waveform} $\rightarrow$ ventana $\rightarrow$ MFCCs $\rightarrow$ cuantización $\rightarrow$ histograma; de ahí también salen la búsqueda KNN, las distancias y el trade-off precisión/recall. La comparativa contra pgvector (HNSW/IVF) es un baseline que pide el enunciado; pgvector no se cubre en los slides.
+\campo{Temas del curso que aplica} ``BD Vectoriales --- Modelos de Recuperación Multimedia''. El profesor enseña este pipeline tal cual: \emph{waveform} $\rightarrow$ ventana $\rightarrow$ MFCCs $\rightarrow$ cuantización $\rightarrow$ histograma; de ahí también salen la búsqueda KNN, las distancias y el trade-off precisión/recall. La comparativa contra pgvector (HNSW/IVF) es un baseline que pide el enunciado; pgvector no se cubre en los slides.
 
 % ------------------------------------------------------------------
 \integrante{Integrante 3}{Recuperación de imágenes y capa de base de datos}
@@ -162,7 +162,7 @@ Antes de los briefs, una aclaración sobre las fuentes: el curso enseña los \em
   \item Configurar y parametrizar los índices nativos (GiST y pgvector) que usan las tres comparativas. Esto es infraestructura: deja los índices listos, pero cada dueño de modalidad corre su propio benchmark sobre ellos.
 \end{itemize}
 
-\campo{Temas del curso que aplica} «BD Vectoriales --- Modelos de Recuperación Multimedia» (SIFT, palabras visuales, BoVW); «Índices Avanzados en PostgreSQL» (GiST, SP-GiST, BRIN) como contexto de los índices del motor. La comparativa contra pgvector la pide el enunciado; no está en los slides.
+\campo{Temas del curso que aplica} ``BD Vectoriales --- Modelos de Recuperación Multimedia'' (SIFT, palabras visuales, BoVW); ``Índices Avanzados en PostgreSQL'' (GiST, SP-GiST, BRIN) como contexto de los índices del motor. La comparativa contra pgvector la pide el enunciado; no está en los slides.
 
 % ------------------------------------------------------------------
 \integrante{Alejandro Marcelo}{Núcleo, backend, aplicaciones y evaluación}
@@ -182,7 +182,7 @@ Antes de los briefs, una aclaración sobre las fuentes: el curso enseña los \em
   \item Coordinación: tablero de issues, reparto de commits y revisión de los \emph{merges}.
 \end{itemize}
 
-\campo{Temas del curso que aplica} «Técnicas de Indexación» (el índice invertido se apoya en los índices densos/sparse y en la teoría del B+Tree); «Arquitectura del DBMS» (el flujo de una consulta ---parser, optimizer, executor, buffer--- para entender el motor sobre el que corre todo).
+\campo{Temas del curso que aplica} ``Técnicas de Indexación'' (el índice invertido se apoya en los índices densos/sparse y en la teoría del B+Tree); ``Arquitectura del DBMS'' (el flujo de una consulta ---parser, optimizer, executor, buffer--- para entender el motor sobre el que corre todo).
 
 \section{Comparativas y evaluación (transversal)}
 
