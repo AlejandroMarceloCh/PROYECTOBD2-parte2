@@ -1,0 +1,15 @@
+numpy
+pandas
+scikit-learn
+librosa
+opencv-contrib-python
+nltk
+pillow
+psycopg2-binary
+pgvector
+fastapi
+uvicorn[standard]
+python-multipart
+matplotlib
+tqdm
+requests

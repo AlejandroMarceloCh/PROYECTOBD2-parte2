@@ -1,0 +1,240 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noquoting]{babel}
+\usepackage[margin=2.6cm]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+\titleformat{\section}{\Large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing{\section}{0pt}{1.4em}{0.6em}
+
+\newcommand{\campo}[1]{\textbf{#1:}\ }
+
+\newcommand{\integrante}[2]{%
+  \subsection*{#1\ \textnormal{\textemdash\ #2}}%
+  \addcontentsline{toc}{subsection}{#1 --- #2}%
+}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Plan de Trabajo}\\[0.3em]
+  {\large Proyecto 2 --- Sistema Multimodal de Recuperación y Búsqueda}
+\end{center}
+
+\vspace{0.4em}
+
+\campo{Curso} Base de Datos II (CS2042) \\
+\campo{Profesor} Heider Sanchez \\
+\campo{Equipo} 4 integrantes \\
+\campo{Repositorio} \url{https://github.com/AlejandroMarceloCh/PROYECTOBD2-parte2} \\
+\campo{Dataset} Free Music Archive (FMA) --- \url{https://github.com/mdeff/fma} \\
+\campo{Material de referencia} Enunciado del proyecto; material del curso: «Técnicas de Indexación», «Algoritmos Externos», «Recuperación de Información Textual», «Índices Avanzados en PostgreSQL» y «BD Vectoriales --- Modelos de Recuperación Multimedia».
+
+\hrulefill
+
+\section{De qué trata el proyecto}
+
+Construimos un motor de recuperación que funciona igual para tres tipos de dato: texto, audio e imagen. La idea de fondo es una sola: cualquier objeto ---una canción, una ficha de metadata, una portada--- se convierte en un histograma de ``palabras'' y se indexa con un índice invertido propio. Las palabras cambian según la modalidad (términos para texto, palabras acústicas para audio, palabras visuales para imagen), pero la tubería es la misma:
+
+\begin{center}
+\textbf{split $\rightarrow$ extractor de características $\rightarrow$ codebook $\rightarrow$ índice invertido}
+\end{center}
+
+Sobre ese motor montamos dos aplicaciones de búsqueda y, para sustentar las decisiones de diseño, comparamos nuestro índice contra los índices nativos de PostgreSQL.
+
+Trabajamos sobre FMA porque es el único dataset del enunciado con audio crudo real (mp3): eso nos deja extraer MFCC propios en vez de usar características precalculadas. De los $\sim$25\,000 tracks de la versión \texttt{medium} sacamos cuatro segmentos por track, lo que nos lleva a las 100\,000 unidades indexables que pide la evaluación.
+
+\section{Objetivos}
+
+\begin{enumerate}[leftmargin=1.4em, itemsep=0.2em]
+  \item Implementar la arquitectura unificada \emph{split $\rightarrow$ extractor $\rightarrow$ codebook $\rightarrow$ índice invertido}, agnóstica a la modalidad.
+  \item Persistir codebook, histogramas y metadatos en PostgreSQL.
+  \item Comparar el índice propio contra los baselines nativos que pide el enunciado: GIN/GiST para texto y pgvector (HNSW/IVF) para audio e imagen.
+  \item Evaluar el sistema a 1K, 10K y 100K chunks midiendo latencia, throughput, precisión/recall, memoria e I/O.
+  \item Entregar dos aplicaciones funcionando en una demo en vivo.
+\end{enumerate}
+
+\section{Especificaciones del entregable}
+
+Lo que el profesor pide, sin interpretación:
+
+\begin{itemize}[leftmargin=1.4em, itemsep=0.2em]
+  \item Repositorio en GitHub documentado, con README/Wiki como informe.
+  \item \texttt{docker-compose} que levante PostgreSQL con la extensión pgvector.
+  \item Índice invertido propio comparado contra GIN/GiST (texto) y pgvector (vectorial).
+  \item Evaluación a 1K / 10K / 100K chunks con gráficos.
+  \item Al menos dos aplicaciones en demo viva.
+  \item Tablero en GitHub Projects con los issues cerrados desde los commits.
+  \item Presentación oral.
+\end{itemize}
+
+El profesor evalúa la cantidad y el reparto de commits. Por eso trabajamos con commits chicos y diarios, cada integrante en su carpeta para no pisarse, y cerramos cada issue desde el commit correspondiente.
+
+\section{Arquitectura del sistema}
+
+El núcleo define cuatro interfaces y nadie las toca una vez fijadas. Cada modalidad las implementa por su lado:
+
+\begin{itemize}[leftmargin=1.4em, itemsep=0.2em]
+  \item \textbf{Splitter} --- parte el objeto en unidades (chunks).
+  \item \textbf{FeatureExtractor} --- saca características de cada chunk (TF-IDF, MFCC o SIFT).
+  \item \textbf{Codebook} --- cuantiza las características contra un vocabulario y arma el histograma.
+  \item \textbf{InvertedIndex} --- guarda y consulta los histogramas.
+\end{itemize}
+
+\textbf{Definición de chunk por modalidad} (fijada en Fase 0, no se cambia sin acuerdo del equipo):
+
+\begin{itemize}[leftmargin=1.4em, itemsep=0.2em]
+  \item \textbf{Audio:} un segmento de $\sim$7.5\,s. Un frame MFCC es una característica, no un chunk. 25K tracks $\times$ 4 segmentos = 100K chunks.
+  \item \textbf{Texto:} un documento de metadata por track.
+  \item \textbf{Imagen:} una portada de álbum.
+\end{itemize}
+
+La extensibilidad sale de esta separación: para una tercera aplicación basta con agregar una clase en \texttt{src/apps} sin tocar el motor.
+
+\section{División del equipo}
+
+Cada integrante es dueño de una modalidad o capa completa, alineada con lo que se ve en el curso. El reparto es por responsabilidad, no por horas: quien construye un pipeline lo lleva de punta a punta, incluida su comparativa contra el método nativo de PostgreSQL.
+
+Antes de los briefs, una aclaración sobre las fuentes: el curso enseña los \emph{conceptos} (índice invertido, TF-IDF, similitud de coseno, MFCC, SIFT, KNN, distancias). Las \emph{herramientas} concretas de la comparativa ---GIN, pgvector con HNSW/IVF--- las exige el enunciado y no aparecen en los slides; se investigan aparte.
+
+% ------------------------------------------------------------------
+\integrante{Integrante 1}{Recuperación textual}
+
+\campo{Responsabilidad} El pipeline de texto completo y su comparativa contra la búsqueda full-text de PostgreSQL.
+
+\campo{Módulos} \texttt{src/text/}
+
+\campo{Trabajo}
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item Preprocesamiento: tokenización, normalización, eliminación de stopwords y stemming sobre la metadata de FMA (título, artista, género, tags y la biografía del artista).
+  \item Vocabulario: construir el codebook textual con las palabras más frecuentes del corpus (top-k tras el preproceso).
+  \item Ponderación TF-IDF de los histogramas y consulta por similitud de coseno: intersección de \emph{posting lists} ordenadas por docID y ranking por coseno (acumulación de scores con los pesos IDF).
+  \item Construcción del índice por bloques en disco y fusión \emph{k-way} de las posting lists con un \emph{min-heap} sobre los \texttt{term\_id}. Este es el mecanismo de los algoritmos externos del curso; en recuperación de información se lo conoce como SPIMI/BSBI.
+  \item La construcción se monta sobre la interfaz \texttt{InvertedIndex} que entrega el núcleo (Alejandro); el Integrante 1 aporta el preproceso, la ponderación y la construcción por bloques.
+  \item Comparativa contra GIN y \texttt{to\_tsvector}/\texttt{to\_tsquery} sobre el mismo corpus.
+\end{itemize}
+
+\campo{Temas del curso que aplica} «Recuperación de Información Textual» (índice invertido, TF-IDF, similitud de coseno, intersección de posting lists); «Algoritmos Externos» (la fusión \emph{k-way} con min-heap que sostiene la construcción del índice). La comparativa contra GIN/GiST la pide el enunciado: el material cubre el full-text con \texttt{to\_tsvector} y el marco GiST, pero GIN como tal no está en los slides.
+
+% ------------------------------------------------------------------
+\integrante{Integrante 2}{Recuperación de audio}
+
+\campo{Responsabilidad} El pipeline de audio completo y su comparativa contra pgvector.
+
+\campo{Módulos} \texttt{src/audio/}
+
+\campo{Trabajo}
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item Segmentar cada track en ventanas de $\sim$7.5\,s y extraer los MFCC por ventana.
+  \item Construir el codebook acústico con MiniBatchKMeans (el K-Means clásico no aguanta millones de frames).
+  \item Cuantizar cada segmento contra el codebook y acumular su histograma de palabras acústicas.
+  \item Búsqueda por similitud sobre los histogramas y comparativa contra pgvector con índices HNSW e IVF.
+  \item Correr la extracción pesada (MFCC + clustering) en Google Colab y bajar solo los histogramas; el disco local no aguanta el dataset completo.
+  \item Control de calidad previo: descartar tracks corruptos o silenciosos antes de extraer.
+\end{itemize}
+
+\campo{Temas del curso que aplica} «BD Vectoriales --- Modelos de Recuperación Multimedia». El profesor enseña este pipeline tal cual: \emph{waveform} $\rightarrow$ ventana $\rightarrow$ MFCCs $\rightarrow$ cuantización $\rightarrow$ histograma; de ahí también salen la búsqueda KNN, las distancias y el trade-off precisión/recall. La comparativa contra pgvector (HNSW/IVF) es un baseline que pide el enunciado; pgvector no se cubre en los slides.
+
+% ------------------------------------------------------------------
+\integrante{Integrante 3}{Recuperación de imágenes y capa de base de datos}
+
+\campo{Responsabilidad} El pipeline de imagen sobre las portadas y el esquema de PostgreSQL que sostiene a todo el equipo.
+
+\campo{Módulos} \texttt{src/image/}, \texttt{src/db/}, \texttt{sql/}
+
+\campo{Trabajo}
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item SIFT: detección de keypoints y descriptores de 128 dimensiones (número variable por imagen).
+  \item Codebook visual con K-Means y representación Bag of Visual Words: cada portada queda como un histograma de palabras visuales de dimensión fija.
+  \item Control de calidad del set de portadas y documentar el límite de diseño: las portadas son por álbum ($\sim$15K únicas), así que la búsqueda visual devuelve álbumes, no tracks.
+  \item Esquema de la base: tablas de productos, codebook e histogramas; instalación de la extensión pgvector y migraciones.
+  \item Configurar y parametrizar los índices nativos (GiST y pgvector) que usan las tres comparativas. Esto es infraestructura: deja los índices listos, pero cada dueño de modalidad corre su propio benchmark sobre ellos.
+\end{itemize}
+
+\campo{Temas del curso que aplica} «BD Vectoriales --- Modelos de Recuperación Multimedia» (SIFT, palabras visuales, BoVW); «Índices Avanzados en PostgreSQL» (GiST, SP-GiST, BRIN) como contexto de los índices del motor. La comparativa contra pgvector la pide el enunciado; no está en los slides.
+
+% ------------------------------------------------------------------
+\integrante{Alejandro Marcelo}{Núcleo, backend, aplicaciones y evaluación}
+
+\campo{Responsabilidad} El motor común, las dos aplicaciones, el backend, el banco de pruebas y la coordinación del repositorio.
+
+\campo{Módulos} \texttt{src/core/}, \texttt{src/apps/}, \texttt{backend/}, \texttt{eval/}, infraestructura (Docker) y el scraper de portadas.
+
+\campo{Trabajo}
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item Definir las interfaces ABC del núcleo (\texttt{Splitter}, \texttt{FeatureExtractor}, \texttt{Codebook}, \texttt{InvertedIndex}) y dejarlas estables para que las tres modalidades enganchen.
+  \item Implementar el índice invertido propio y genérico en el núcleo: diccionario más \emph{posting lists}, con intersección y ranking por coseno. Las tres modalidades lo reutilizan; cada pipeline aporta su construcción y su preproceso.
+  \item App 1 --- identificación de audio (tipo Shazam): se sube un fragmento, se extrae su histograma y se devuelven los tracks más parecidos.
+  \item App 2 --- búsqueda por texto: una consulta en lenguaje natural devuelve tracks por género y tags.
+  \item Backend en FastAPI que expone las dos apps; demo de punta a punta.
+  \item Banco de pruebas a 1K/10K/100K chunks con sus gráficos; \texttt{docker-compose} con PostgreSQL + pgvector; scraper de portadas.
+  \item Coordinación: tablero de issues, reparto de commits y revisión de los \emph{merges}.
+\end{itemize}
+
+\campo{Temas del curso que aplica} «Técnicas de Indexación» (el índice invertido se apoya en los índices densos/sparse y en la teoría del B+Tree); «Arquitectura del DBMS» (el flujo de una consulta ---parser, optimizer, executor, buffer--- para entender el motor sobre el que corre todo).
+
+\section{Comparativas y evaluación (transversal)}
+
+Cada modalidad enfrenta su índice propio contra el método nativo que le corresponde. No se mezclan: GIN no aplica a audio y pgvector no aplica a full-text.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Modalidad} & \textbf{Índice propio} & \textbf{Baseline nativo (enunciado)} \\
+\midrule
+Texto  & Índice invertido + construcción \emph{k-way} & GIN / GiST (full-text) \\
+Audio  & Histogramas acústicos    & pgvector (HNSW / IVF) \\
+Imagen & Histogramas visuales (BoVW) & pgvector (HNSW / IVF) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+GIN/GiST y pgvector son los baselines que exige el enunciado; el curso cubre los conceptos (full-text con \texttt{to\_tsvector}, el marco GiST, KNN y distancias sobre histogramas), no esas herramientas en sí.
+
+\textbf{Protocolo experimental} (cerrado antes de empezar a medir):
+
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item Conjunto de consultas fijo y separado (no visto durante la indexación).
+  \item Mismo subconjunto, misma consulta y mismas condiciones para los tres métodos.
+  \item Mismo $k$ entre sistemas comparados.
+  \item Se mide con caché fría y caché caliente, y se reportan las dos.
+  \item Semillas fijas y documentadas.
+  \item I/O en PostgreSQL con \texttt{EXPLAIN (ANALYZE, BUFFERS)}.
+\end{itemize}
+
+Para precisión/recall usamos como referencia el género: relevante = mismo género de primer nivel (FMA tiene 161 géneros jerárquicos en 16 raíces); como métrica secundaria, el subgénero o los tags.
+
+\section{Orden de trabajo}
+
+El reparto es por asignaciones, pero hay un orden lógico que respeta las dependencias entre módulos.
+
+\begin{description}[leftmargin=2.2em, style=nextline, itemsep=0.3em]
+  \item[Fase 0 \textemdash{} Acuerdos de diseño (todos).] Fijar la definición de chunk por modalidad, el esquema de la base y el protocolo experimental. Aquí también se cierra el \textbf{contrato de entrega} entre los pipelines y el núcleo: el formato del histograma y de la metadata persistida. Nadie codea su pipeline antes de cerrar esto, o los módulos no encajan.
+  \item[Fase 1 \textemdash{} Pipelines por modalidad (en paralelo).] Cada integrante construye su extractor, su codebook y sus histogramas sobre una muestra chica. Alejandro deja el núcleo y las interfaces listas al inicio de esta fase. Cada quien va dejando escrita la sección de su modalidad para el informe.
+  \item[Fase 2 \textemdash{} Persistencia y comparativas.] Cargar los histogramas en PostgreSQL y levantar las comparativas contra los índices nativos.
+  \item[Fase 3 \textemdash{} Aplicaciones y demo.] Backend, las dos apps y la demo de punta a punta. No arranca hasta que los tres pipelines estén persistidos (depende del contrato de la Fase 0).
+  \item[Fase 4 \textemdash{} Evaluación e informe.] Correr el banco de pruebas a 1K/10K/100K y generar los gráficos. Cada integrante redacta la sección de su modalidad; Alejandro consolida arquitectura y evaluación en el README/Wiki.
+  \item[Fase 5 \textemdash{} Presentación.] Cada integrante presenta su capa y Alejandro cubre arquitectura, apps y evaluación. Se preparan las diapositivas y se ensaya la demo de las dos apps.
+\end{description}
+
+\section{Convenciones de trabajo}
+
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item Commits chicos y diarios, en español, descriptivos: \texttt{feat(audio): extracción MFCC por segmento}.
+  \item Una tarea = un issue en GitHub Projects, cerrado desde el commit con \texttt{closes \#N}.
+  \item Una rama por feature, PR a \texttt{main} y revisión antes del merge.
+  \item Cada integrante trabaja en su carpeta para no generar conflictos.
+\end{itemize}
+
+\end{document}

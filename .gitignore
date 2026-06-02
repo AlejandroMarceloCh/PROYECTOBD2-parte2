@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+
+# Datos (NO versionar el dataset)
+data/*
+!data/.gitkeep
+!data/download.md
+
+# Artefactos / modelos
+*.pkl
+*.npy
+*.joblib
+
+# Entorno
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode/
+.idea/
